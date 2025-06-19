@@ -98,6 +98,11 @@ output "node_group_instance_types" {
   description = "The instance types of the EKS node group"
 }
 
+output "cluster_certificate_authority_data" {
+  value       = nonsensitive(data.aws_eks_cluster_auth.eks)
+  sensitive   = true
+}
+
 output "developer_access_key_id" {
   value       = nonsensitive(module.access-management.developer_access_key_id)
   description = "The access key ID for the developer user"
@@ -108,5 +113,32 @@ output "developer_secret_access_key" {
   description = "The secret access key for the developer user"
 }
 
+output "manager_access_key_id" {
+  value       = nonsensitive(module.access-management.manager_access_key_id)
+  description = "The access key ID for the manager user"
+}
 
+output "manager_secret_access_key" {
+  value       = nonsensitive(module.access-management.manager_secret_access_key)
+  description = "The secret access key for the manager user"
+}
 
+output "tester_access_key_id" {
+  value       = nonsensitive(module.access-management.tester_access_key_id)
+  description = "The access key ID for the tester user"
+}
+
+output "tester_secret_access_key" {
+  value       = nonsensitive(module.access-management.tester_secret_access_key)
+  description = "The secret access key for the tester user"
+}
+
+output "programmer_access_key_id" {
+  value       = nonsensitive(module.access-management.programmer_access_key_id)
+  description = "The access key ID for the programmer user"
+}
+
+output "programmer_secret_access_key" {
+  value       = nonsensitive(module.access-management.programmer_secret_access_key)
+  description = "The secret access key for the programmer user"
+}

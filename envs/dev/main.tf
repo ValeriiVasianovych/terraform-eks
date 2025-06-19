@@ -22,14 +22,12 @@ provider "aws" {
   }
 }
 
-data "aws_caller_identity" "current" {}
-
 module "vpc" {
   source = "../../modules/vpc"
 
   region     = var.region
   env        = var.env
-  account_id = data.aws_caller_identity.current.id
+  account_id = data.aws_caller_identity.current.account_id
 
   vpc_cidr             = "10.0.0.0/16"
   public_subnet_cidrs  = ["10.0.10.0/24", "10.0.11.0/24"]
@@ -76,3 +74,14 @@ module "access-management" {
   depends_on = [module.vpc, module.eks]
 }
 
+# module "hpa" {
+#   source = "../../modules/hpa"
+
+#   region     = var.region
+#   env        = var.env
+#   account_id = data.aws_caller_identity.current.id
+
+#   cluster_name = module.eks.cluster_name
+
+#   depends_on = [module.vpc, module.eks]
+# }

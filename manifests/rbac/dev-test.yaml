@@ -2,22 +2,22 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: viewer
+  name: dev-test
 rules:
   - apiGroups: ["*"]
-    resources: ["deployments", "configmaps", "secrets", "services", "pods", "nodes"]
-    verbs: ["get", "list", "watch"]
+    resources: ["deployments", "configmaps", "secrets", "services", "pods", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: viewer-binding
+  name: dev-test-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: viewer
+  name: dev-test
 subjects:
   - kind: Group
-    name: viewer
+    name: dev-test
     apiGroup: rbac.authorization.k8s.io
