@@ -98,11 +98,6 @@ output "node_group_instance_types" {
   description = "The instance types of the EKS node group"
 }
 
-output "cluster_certificate_authority_data" {
-  value       = nonsensitive(data.aws_eks_cluster_auth.eks)
-  sensitive   = true
-}
-
 output "developer_access_key_id" {
   value       = nonsensitive(module.access-management.developer_access_key_id)
   description = "The access key ID for the developer user"

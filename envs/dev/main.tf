@@ -22,6 +22,20 @@ provider "aws" {
   }
 }
 
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks.token
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.eks.token
+  }
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -35,12 +49,10 @@ module "vpc" {
 }
 
 module "eks" {
-  source = "../../modules/eks"
-
-  region     = var.region
-  env        = var.env
-  account_id = data.aws_caller_identity.current.id
-
+  source             = "../../modules/eks"
+  region             = var.region
+  env                = var.env
+  account_id         = data.aws_caller_identity.current.id
   vpc_id             = module.vpc.vpc_id
   public_subnet_ids  = module.vpc.public_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
@@ -54,34 +66,34 @@ module "eks" {
   instance_types  = local.instance_types
   ingress_ports   = local.ingress_ports
 
-  coredns_version    = local.coredns_version
-  kube_proxy_version = local.kube_proxy_version
-  vpc_cni_version    = local.vpc_cni_version
+  coredns_version      = local.coredns_version
+  kube_proxy_version   = local.kube_proxy_version
+  vpc_cni_version      = local.vpc_cni_version
   # ebs_csi_version    = local.ebs_csi_version
 
   depends_on = [module.vpc]
 }
 
 module "access-management" {
-  source = "../../modules/access-management"
-
-  region     = var.region
-  env        = var.env
-  account_id = data.aws_caller_identity.current.id
-
+  source       = "../../modules/access-management"
+  region       = var.region
+  env          = var.env
+  account_id   = data.aws_caller_identity.current.id
   cluster_name = module.eks.cluster_name
+  depends_on   = [module.vpc, module.eks]
+}
 
+module "hpa" {
+  source     = "../../modules/hpa"
+  env        = var.env
   depends_on = [module.vpc, module.eks]
 }
 
-# module "hpa" {
-#   source = "../../modules/hpa"
-
-#   region     = var.region
-#   env        = var.env
-#   account_id = data.aws_caller_identity.current.id
-
-#   cluster_name = module.eks.cluster_name
-
-#   depends_on = [module.vpc, module.eks]
-# }
+module "cluster-autoscaler" {
+  source               = "../../modules/cluster-autoscaler"
+  cluster_name         = module.eks.cluster_name
+  region               = var.region
+  env                  = var.env
+  pod_identity_version = local.pod_identity_version
+  depends_on           = [module.hpa]
+}

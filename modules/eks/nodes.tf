@@ -30,10 +30,10 @@ resource "aws_eks_node_group" "nodes" {
     aws_iam_role_policy_attachment.amazon_eks_service_policy
   ]
 
+  # For Pod Identity support
   lifecycle {
     ignore_changes = [
-      scaling_config[0].desired_size,
-      scaling_config[0].min_size
+      scaling_config[0].desired_size
     ]
   }
 
