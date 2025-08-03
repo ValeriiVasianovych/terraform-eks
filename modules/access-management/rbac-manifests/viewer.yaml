@@ -5,7 +5,7 @@ metadata:
   name: viewer
 rules:
   - apiGroups: ["*"]
-    resources: ["deployments", "configmaps", "secrets", "services", "pods", "nodes"]
+    resources: ["deployments", "configmaps", "secrets", "services", "pods"]
     verbs: ["get", "list", "watch"]
 
 ---

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-sa
+  namespace: argo-wf
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::312211201134:role/ArgoS3Role 

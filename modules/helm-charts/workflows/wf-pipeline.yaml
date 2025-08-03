@@ -1,0 +1,162 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: app-wf-001
+  namespace: argo-wf
+spec:
+  serviceAccountName: argo-sa
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: clone-repo-step-1
+            template: clone-repo
+        - - name: build-and-push-step-2
+            template: build-and-push
+        - - name: deployment-app-step-3a
+            template: deployment-app
+            arguments:
+              parameters:
+                - name: tag-id
+                  value: "{{steps.clone-repo-step-1.outputs.parameters.tag-id}}"
+          - name: service-app-step-3b
+            template: service-app
+    - name: clone-repo
+      container:
+        image: alpine/git
+        command: [sh, -c]
+        args:
+          - |
+            git clone https://github.com/ValeriiVasianovych/test-nodejs-app /tmp/workspace
+            echo "{{workflow.name}}" | sed 's/^.*-//' > /tmp/workspace/tag-id
+            cat /tmp/workspace/tag-id
+      outputs:
+        artifacts:
+          - name: repo-artifact
+            path: /tmp/workspace
+            s3:
+              endpoint: s3.amazonaws.com
+              bucket: argo-wf-artifacts-vv
+              key: argo-wf-artifact
+            artifactGC:
+              strategy: Never
+        parameters:
+          - name: tag-id
+            valueFrom:
+              path: /tmp/workspace/tag-id
+    - name: build-and-push
+      inputs:
+        artifacts:
+          - name: repo-artifact
+            path: /tmp/workspace
+            s3:
+              endpoint: s3.amazonaws.com
+              bucket: argo-wf-artifacts-vv
+              key: argo-wf-artifact
+            artifactGC:
+              strategy: Never
+      container:
+        image: docker:dind
+        command: [sh, -c]
+        args:
+          - |
+            dockerd &
+            cd /tmp/workspace
+            ls -la
+            TAG=$(cat /tmp/workspace/tag-id)
+            docker build -t valeriivasianovych/nodejs-argo-events:${TAG} .
+            echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+            docker push valeriivasianovych/nodejs-argo-events:${TAG}
+        env:
+          - name: DOCKER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: docker-credentials
+                key: username
+          - name: DOCKER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: docker-credentials
+                key: password
+        securityContext:
+          privileged: true
+    - name: deployment-app
+      inputs:
+        parameters:
+          - name: tag-id
+      resource:
+        action: apply
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Rollout
+          metadata:
+            name: nodejs-app
+            namespace: argo-wf
+            labels:
+              app: nodejs-app
+              owner: valerii-vasianovych
+              env: dev
+          spec:
+            replicas: 2
+            strategy:
+              canary:
+                steps:
+                  - setWeight: 10
+                  - pause:
+                      duration: 30s
+                  - setWeight: 30
+                  - pause:
+                      duration: 30s
+                  - setWeight: 50
+                  - pause:
+                      duration: 30s
+                  - setWeight: 100
+            revisionHistoryLimit: 5
+            selector:
+              matchLabels:
+                app: nodejs-app
+            template:
+              metadata:
+                labels:
+                  app: nodejs-app
+              spec:
+                containers:
+                - name: nodejs-app
+                  image: valeriivasianovych/nodejs-argo-events:{{inputs.parameters.tag-id}}
+                  ports:
+                  - containerPort: 3000
+                    name: http-port
+                    protocol: TCP
+    - name: service-app
+      inputs:
+        artifacts:
+          - name: repo-artifact
+            path: /tmp/workspace
+            s3:
+              endpoint: s3.amazonaws.com
+              bucket: argo-wf-artifacts-vv
+              key: argo-wf-artifact
+            artifactGC:
+              strategy: Never
+      resource:
+        action: apply
+        manifest: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nodejs-app-service
+            namespace: argo-wf
+            labels:
+              app: nodejs-app
+              owner: valerii-vasianovych
+              env: dev
+          spec:
+            selector:
+              app: nodejs-app
+            ports:
+              - name: app-listener
+                protocol: TCP
+                port: 3000
+                targetPort: 3000
+            type: ClusterIP

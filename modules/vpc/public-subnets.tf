@@ -7,6 +7,7 @@ resource "aws_subnet" "public_subnets" {
   tags = {
     Name = "public-subnet-${count.index + 1}-${var.env}"
     CIDR = element(var.public_subnet_cidrs, count.index)
+    "kubernetes.io/role/elb"                               = "1"
   }
 }
 

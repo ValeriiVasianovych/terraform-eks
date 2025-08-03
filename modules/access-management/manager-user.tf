@@ -8,7 +8,7 @@ resource "aws_iam_role" "eks_admin" {
         Effect = "Allow"
         Action = "sts:AssumeRole"
         Principal = {
-          AWS = "arn:aws:iam::${var.account_id}:root"
+          AWS = "arn:aws:iam::${var.account_id}:root" # All users and roles in the account can assume this role
         }
       }
     ]
