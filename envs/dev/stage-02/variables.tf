@@ -26,4 +26,5 @@ locals {
   vpc_cni_version      = "v1.19.5-eksbuild.3"
   pod_identity_version = "v1.3.7-eksbuild.2"
   ebs_csi_version      = "v1.44.0-eksbuild.1"
+  efs_csi_version      = "v2.1.9-eksbuild.1"
 }

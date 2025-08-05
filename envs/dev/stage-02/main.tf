@@ -83,3 +83,13 @@ module "ebs-csi" {
   depends_on      = [module.loadbalancer-controller]
   ebs_csi_version = local.ebs_csi_version
 }
+
+module "efs-csi" {
+  source                    = "../../../modules/efs-csi"
+  env                       = local.vpc_env
+  cluster_name              = local.cluster_name
+  depends_on                = [module.ebs-csi]
+  efs_csi_version           = local.efs_csi_version
+  private_subnet_ids        = local.private_subnet_ids
+  cluster_security_group_id = local.cluster_security_group_id
+}
